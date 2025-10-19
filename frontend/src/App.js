@@ -22,6 +22,8 @@ import Profile from "./pages/Profile";
 import Auth from "./pages/Auth";
 import Checkout from "./pages/Checkout";
 import Orders from "./pages/Orders"; // Add this import
+import CartPage from "./pages/Cart";
+import ProductDetails from "./pages/ProductDetails";
 
 function App() {
   const [cart, setCart] = useState([]);
@@ -223,6 +225,8 @@ function App() {
               <Route path="/auth" element={<Auth onAuthSuccess={handleAuthSuccess} />} />
               <Route path="/checkout" element={user ? <Checkout cart={cart} user={user} /> : <Navigate to="/auth" replace />} />
               <Route path="/orders" element={user ? <Orders user={user} /> : <Navigate to="/auth" replace />} />
+              <Route path="/cart" element={<CartPage/>} />
+              <Route path="/product/:id" element={<ProductDetails />} />
             </Routes>
           </main>
           <Footer />

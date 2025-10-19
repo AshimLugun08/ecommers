@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, Grid, List, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
+import { Link } from 'react-router';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 // NOTE: ProductGrid component is not used here, replaced by inline rendering.
 // import ProductGrid from '../components/ProductGrid'; 
@@ -284,53 +285,34 @@ const Shop = ({ onAddToCart, onToggleWishlist, wishlist = [] }) => {
                 'space-y-4'
               }>
                 {sortedProducts.map((product) => (
-                  viewMode === 'grid' ? (
-                    <div key={product._id} className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
-                      <div className="relative overflow-hidden aspect-[3/4]">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all" />
-                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all">
-                          <Button
-                            onClick={() => onAddToCart(product)}
-                            className="bg-white text-gray-800 hover:bg-gray-100 px-4 py-2 text-sm font-medium"
-                          >
-                            Add to Cart
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="p-4">
-                        <p className="text-xs text-gray-500 mb-1">{product.category}</p>
-                        <h3 className="font-medium text-gray-800 mb-2 line-clamp-2">{product.name}</h3>
-                        <p className="text-lg font-semibold text-gray-800">Rs. {product.price.toLocaleString()}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div key={product._id} className="flex bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow">
-                      <div className="w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden">
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="ml-4 flex-1">
-                        <p className="text-xs text-gray-500 mb-1">{product.category}</p>
-                        <h3 className="font-medium text-gray-800 mb-2">{product.name}</h3>
-                        <p className="text-lg font-semibold text-gray-800 mb-2">Rs. {product.price.toLocaleString()}</p>
-                        <Button
-                          onClick={() => onAddToCart(product)}
-                          size="sm"
-                          className="bg-purple-600 hover:bg-purple-700"
-                        >
-                          Add to Cart
-                        </Button>
-                      </div>
-                    </div>
-                  )
+                  <Link to={`/product/${product._id}`} key={product._id}>
+  <div className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
+    <div className="relative overflow-hidden aspect-[3/4]">
+      <img
+        src={product.image}
+        alt={product.name}
+        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+      />
+      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all" />
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all">
+        <Button
+          onClick={(e) => {
+            e.preventDefault(); // prevent link click when adding to cart
+            onAddToCart(product);
+          }}
+          className="bg-white text-gray-800 hover:bg-gray-100 px-4 py-2 text-sm font-medium"
+        >
+          Add to Cart
+        </Button>
+      </div>
+    </div>
+    <div className="p-4">
+      <p className="text-xs text-gray-500 mb-1">{product.category}</p>
+      <h3 className="font-medium text-gray-800 mb-2 line-clamp-2">{product.name}</h3>
+      <p className="text-lg font-semibold text-gray-800">Rs. {product.price.toLocaleString()}</p>
+    </div>
+  </div>
+</Link>
                 ))}
               </div>
             ) : (

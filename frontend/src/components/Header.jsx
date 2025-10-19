@@ -14,6 +14,7 @@ const Header = ({ cartCount = 0, onCartClick, onAuthClick }) => {
     { name: 'NEW ARRIVALS', href: '/new-arrivals' },
     { name: 'INFLUENCER PICKS', href: '/influencer-picks' },
     { name: 'CONTACT US', href: '/contact' },
+    
   ];
 
   return (
@@ -100,17 +101,19 @@ const Header = ({ cartCount = 0, onCartClick, onAuthClick }) => {
             </button>
 
             {/* Cart */}
-            <button
-              className='p-2 hover:text-purple-600 transition-colors relative'
-              onClick={onCartClick}
-            >
-              <ShoppingBag size={20} />
-              {cartCount > 0 && (
-                <span className='absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center'>
-                  {cartCount}
-                </span>
-              )}
-            </button>
+          
+             <Link
+  to="/cart"
+  className="p-2 hover:text-purple-600 transition-colors relative"
+>
+  <ShoppingBag size={20} />
+  {cartCount > 0 && (
+    <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+      {cartCount}
+    </span>
+  )}
+</Link>
+
           </div>
         </div>
 
