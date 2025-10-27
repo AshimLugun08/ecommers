@@ -5,7 +5,7 @@ const Product = require('../models/Product');
 
 const router = express.Router();
 
-// Get user's cart
+// GET user's cart
 router.get('/', protect, async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user._id })
@@ -21,40 +21,46 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
-// Add item to cart
+// ADD item to cart
 router.post('/add', protect, async (req, res) => {
   try {
-    const { productId, quantity, size, color } = req.body;
+    const { productId, quantity, size, color, priceAtTimeOfAddition } = req.body;
 
     const product = await Product.findById(productId);
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
 
-    let cart = await Cart.findOne({ user: req.user._id });
+    // ✅ Fix image issue: check array of objects or fallback
+    const imageUrl =
+      (Array.isArray(product.images) && product.images[0]?.url) ||
+      product.image ||
+      '';
 
+    const itemPrice = priceAtTimeOfAddition || product.price;
+
+    let cart = await Cart.findOne({ user: req.user._id });
     if (!cart) {
       cart = new Cart({ user: req.user._id, items: [] });
     }
 
-    // Check if item already exists in cart
     const existingItemIndex = cart.items.findIndex(
-      item => item.product.toString() === productId && 
-              item.size === size && 
-              item.color === color
+      (item) =>
+        item.product.toString() === productId &&
+        item.size === size &&
+        item.color === color
     );
 
     if (existingItemIndex > -1) {
-      // Update quantity if item exists
       cart.items[existingItemIndex].quantity += quantity;
     } else {
-      // Add new item
       cart.items.push({
         product: productId,
         quantity,
         size,
         color,
-        price: product.price
+        priceAtTimeOfAddition: itemPrice,
+        image: imageUrl, // ✅ Store proper image URL
       });
     }
 
@@ -67,39 +73,33 @@ router.post('/add', protect, async (req, res) => {
   }
 });
 
-// Update cart item quantity
+// UPDATE cart item quantity
 router.put('/update/:itemId', protect, async (req, res) => {
   try {
     const { quantity } = req.body;
     const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) return res.status(404).json({ message: 'Cart not found' });
 
-    const item = cart.items.id(req.params.itemId);
-    if (!item) {
-      return res.status(404).json({ message: 'Item not found in cart' });
-    }
+    const item = cart.items.id(req.params.itemId); // ✅ Access by item _id
+    if (!item) return res.status(404).json({ message: 'Item not found' });
 
-    if (quantity <= 0) {
-      item.remove();
-    } else {
-      item.quantity = quantity;
-    }
-
+    item.quantity = quantity;
     await cart.save();
     await cart.populate('items.product', 'name images price');
-
     res.json(cart);
   } catch (error) {
     res.status(400).json({ message: error.message });
   }
 });
 
-// Remove item from cart
+// REMOVE item from cart
 router.delete('/remove/:itemId', protect, async (req, res) => {
   try {
     const cart = await Cart.findOne({ user: req.user._id });
+    if (!cart) return res.status(404).json({ message: 'Cart not found' });
+
     cart.items.pull(req.params.itemId);
     await cart.save();
-    
     await cart.populate('items.product', 'name images price');
     res.json(cart);
   } catch (error) {

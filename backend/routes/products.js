@@ -1,8 +1,17 @@
+// routes/products.js (Verified Clean)
+
 const express = require('express');
 const Product = require('../models/Product');
-const auth = require('../middleware/auth'); // 'auth' is now the object: { protect, admin }
+// Assuming your auth middleware exports an object like { protect: fn, admin: fn }
+const auth = require('../middleware/auth'); 
 
 const router = express.Router();
+
+// ------------------------------------------------------------------
+// IMPORTANT: This public route is where the CORS error was occurring.
+// Since no manual headers are set here, the error MUST be fixed by 
+// the global 'cors' middleware in server.js.
+// ------------------------------------------------------------------
 
 // Get all products (Public route)
 router.get('/', async (req, res) => {
@@ -10,6 +19,7 @@ router.get('/', async (req, res) => {
     const products = await Product.find();
     res.json(products);
   } catch (error) {
+    // Standard error handling
     res.status(500).json({ message: error.message });
   }
 });
@@ -27,8 +37,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create product (Admin only - FIX applied here)
-// We pass an array of middleware functions: [auth.protect, auth.admin]
+// Create product (Admin only)
+// Uses array syntax for multiple middlewares: [protection, role check]
 router.post('/', [auth.protect, auth.admin], async (req, res) => {
   const product = new Product(req.body);
   try {
@@ -39,12 +49,9 @@ router.post('/', [auth.protect, auth.admin], async (req, res) => {
   }
 });
 
-// Update product (Admin only - FIX applied here)
-// We pass an array of middleware functions: [auth.protect, auth.admin]
+// Update product (Admin only)
 router.put('/:id', [auth.protect, auth.admin], async (req, res) => {
   try {
-    // Note: In a real-world scenario, you might want to perform role checks
-    // on the Product model fields before updating.
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
@@ -55,8 +62,7 @@ router.put('/:id', [auth.protect, auth.admin], async (req, res) => {
   }
 });
 
-// Delete product (Admin only - FIX applied here)
-// We pass an array of middleware functions: [auth.protect, auth.admin]
+// Delete product (Admin only)
 router.delete('/:id', [auth.protect, auth.admin], async (req, res) => {
   try {
     const product = await Product.findByIdAndDelete(req.params.id);

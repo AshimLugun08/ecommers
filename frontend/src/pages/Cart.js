@@ -1,98 +1,155 @@
-// CartPage.js
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
 
 const CartPage = () => {
   const [cart, setCart] = useState(null);
+  const [loading, setLoading] = useState(true);
   const token = localStorage.getItem('token');
 
+  // Fetch cart items
   const fetchCart = async () => {
-    const res = await fetch('http://localhost:5000/api/cart', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const data = await res.json();
-    setCart(data);
+    try {
+      setLoading(true);
+      const res = await fetch('http://localhost:5000/api/cart', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch cart');
+      const data = await res.json();
+      setCart(data);
+    } catch (error) {
+      console.error(error);
+      setCart({ items: [], total: 0 });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => {
-    fetchCart();
-  }, []);
+  useEffect(() => { fetchCart(); }, []);
 
+  // Remove item from cart
   const handleRemove = async (itemId) => {
-    const res = await fetch(`http://localhost:5000/api/cart/remove/${itemId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    const data = await res.json();
-    setCart(data);
+    try {
+      const res = await fetch(`http://localhost:5000/api/cart/remove/${itemId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setCart(data);
+    } catch (error) { console.error(error); }
   };
 
+  // Change item quantity
   const handleQuantityChange = async (itemId, newQty) => {
-    const res = await fetch(`http://localhost:5000/api/cart/update/${itemId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ quantity: newQty }),
-    });
-    const data = await res.json();
-    setCart(data);
+    try {
+      const res = await fetch(`http://localhost:5000/api/cart/update/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ quantity: newQty }),
+      });
+      if (!res.ok) { fetchCart(); return; }
+      const data = await res.json();
+      setCart(data);
+    } catch (error) { console.error(error); fetchCart(); }
   };
 
-  if (!cart) return <div>Loading...</div>;
+  // Place order (no payment)
+  const handleCheckout = async () => {
+    if (!cart?.items?.length) return alert('Cart is empty');
+
+    try {
+      const products = cart.items.map(item => ({
+        product: item.product._id,
+        name: item.product.name,
+        price: item.product.price,
+        quantity: item.quantity,
+        image: item.image || item.product.images?.[0],
+      }));
+
+      await fetch('http://localhost:5000/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          products,
+          shippingAddress: {
+            name: "John Doe",
+            address: "123 Main Street",
+            city: "City",
+            state: "State",
+            zip: "123456",
+            country: "India",
+          },
+        }),
+      });
+
+      alert('Order placed successfully!');
+      window.location.href = '/orders';
+    } catch (error) {
+      console.error(error);
+      alert('Checkout failed. Try again.');
+    }
+  };
+
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="animate-spin w-16 h-16 border-4 border-gray-300 border-t-purple-600 rounded-full"></div>
+    </div>
+  );
+
+  const cartItems = cart?.items || [];
+  if (!cartItems.length) return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center p-8 bg-white rounded-xl shadow-lg">
+        <ShoppingBag className="mx-auto w-16 h-16 text-gray-400 mb-4" />
+        <h2 className="text-xl font-bold mb-2">Your cart is empty</h2>
+        <p className="text-gray-600 mb-4">Start shopping to add items!</p>
+        <a href="/shop" className="bg-purple-600 text-white px-6 py-2 rounded-lg">Shop Now</a>
+      </div>
+    </div>
+  );
+
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const shipping = subtotal > 0 ? 50 : 0;
+  const total = subtotal + shipping;
 
   return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-2xl font-semibold mb-6">🛒 Your Cart</h1>
-      {cart.items.length === 0 ? (
-        <p>Your cart is empty.</p>
-      ) : (
-        cart.items.map((item) => (
-          <div
-            key={item._id}
-            className="flex items-center justify-between border-b py-4"
-          >
-            <div className="flex items-center gap-4">
-              <img
-                src={item.product.images[0]}
-                alt={item.product.name}
-                className="w-16 h-16 object-cover rounded"
-              />
-              <div>
-                <h2 className="font-medium">{item.product.name}</h2>
-                <p>₹{item.product.price}</p>
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-7xl mx-auto grid lg:grid-cols-3 gap-8">
+        {/* Cart Items */}
+        <div className="lg:col-span-2 space-y-4">
+          {cartItems.map(item => (
+            <div key={item._id} className="bg-white p-6 rounded-xl shadow hover:shadow-md">
+              <div className="flex gap-6">
+                <img src={item.image || item.product.images?.[0]} alt={item.product.name} className="w-24 h-24 object-cover rounded-xl" />
+                <div className="flex-grow flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-semibold">{item.product.name}</h3>
+                    <p className="text-xl font-bold">₹{item.product.price}</p>
+                  </div>
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex items-center gap-3">
+                      <button disabled={item.quantity <= 1} onClick={() => handleQuantityChange(item._id, item.quantity - 1)} className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center"><Minus className="w-4 h-4" /></button>
+                      <span>{item.quantity}</span>
+                      <button onClick={() => handleQuantityChange(item._id, item.quantity + 1)} className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center"><Plus className="w-4 h-4" /></button>
+                    </div>
+                    <button onClick={() => handleRemove(item._id)} className="flex items-center gap-2 text-red-600"><Trash2 className="w-4 h-4" /> Remove</button>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() =>
-                  handleQuantityChange(item._id, Math.max(1, item.quantity - 1))
-                }
-                className="px-2 py-1 border rounded"
-              >
-                -
-              </button>
-              <span>{item.quantity}</span>
-              <button
-                onClick={() => handleQuantityChange(item._id, item.quantity + 1)}
-                className="px-2 py-1 border rounded"
-              >
-                +
-              </button>
-              <button
-                onClick={() => handleRemove(item._id)}
-                className="bg-red-500 text-white px-4 py-2 rounded"
-              >
-                Remove
-              </button>
-            </div>
+          ))}
+        </div>
+
+        {/* Order Summary */}
+        <div>
+          <div className="bg-white p-6 rounded-xl shadow sticky top-8">
+            <h2 className="font-bold text-lg mb-4">Order Summary</h2>
+            <div className="flex justify-between mb-2"><span>Subtotal</span><span>₹{subtotal}</span></div>
+            <div className="flex justify-between mb-2"><span>Shipping</span><span>₹{shipping}</span></div>
+            <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span>₹{total}</span></div>
+            <button onClick={handleCheckout} className="w-full bg-purple-600 text-white py-3 rounded-lg mt-4 hover:bg-purple-700">Place Order</button>
           </div>
-        ))
-      )}
+        </div>
+      </div>
     </div>
   );
 };
