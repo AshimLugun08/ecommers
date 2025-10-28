@@ -1,47 +1,79 @@
 const express = require('express');
-const Order = require('../models/Order');
-const { protect } = require('../middleware/auth'); 
-
 const router = express.Router();
+const Order = require('../models/Order');
+const { protect } = require('../middleware/auth'); // assuming you use JWT middleware
 
-// Create order (without payment)router.post('/', protect, async (req, res) => {
-  router.post('/', protect, async (req, res) => {
+// ✅ Create Order
+router.post('/', protect, async (req, res) => {
   try {
-    const { products, shippingAddress } = req.body;
-    if (!products || products.length === 0)
-      return res.status(400).json({ message: 'No products provided' });
+    const { products, totalAmount, shippingAddress, paymentId } = req.body;
 
-    let totalAmount = 0;
-    products.forEach(item => totalAmount += item.price * item.quantity);
+    if (!products || products.length === 0) {
+      return res.status(400).json({ message: 'No products in order' });
+    }
 
-    // Save order directly in DB (skip Razorpay for now)
     const order = new Order({
-      user: req.user.id,
+      user: req.user._id,
       products,
       totalAmount,
       shippingAddress,
-      status: 'pending', // or 'paid' if you want
+      paymentId,
     });
 
     await order.save();
-    res.json({ orderId: order._id, message: 'Order created successfully' });
+
+    const populatedOrder = await order.populate({
+      path: 'products.product',
+      select: 'name image price category description',
+    });
+
+    res.status(201).json({
+      message: 'Order created successfully',
+      order: populatedOrder,
+    });
   } catch (error) {
-    console.error('Order creation error:', error);
-    res.status(500).json({ message: error.message || 'Failed to create order' });
+    console.error('🔥 Order creation failed:', error.message);
+    console.error(error.stack);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
 
-
-// Get all orders for the logged-in user
-router.get('/', protect, async (req, res) => {
+// ✅ Get All Orders (Admin)
+router.get('/', async (req, res) => {
   try {
-    const orders = await Order.find({ user: req.user.id })
-      .sort({ createdAt: -1 }); // recent orders first
-    res.json(orders);
+    const orders = await Order.find()
+      .populate({
+        path: 'products.product',
+        select: 'name image price category description',
+      })
+      .populate({
+        path: 'user',
+        select: 'name email',
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(orders);
   } catch (error) {
-    console.error('Fetch orders error:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error fetching orders:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ✅ Get Orders by Logged-in User
+router.get('/my-orders', protect, async (req, res) => {
+  try {
+    const orders = await Order.find({ user: req.user._id })
+      .populate({
+        path: 'products.product',
+        select: 'name image price category description',
+      })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(orders);
+  } catch (error) {
+    console.error('Error fetching user orders:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

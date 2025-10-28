@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ShoppingBag, Trash2, Plus, Minus } from 'lucide-react';
+import axios from 'axios';
 
 const CartPage = () => {
   const [cart, setCart] = useState(null);
@@ -15,6 +16,7 @@ const CartPage = () => {
       });
       if (!res.ok) throw new Error('Failed to fetch cart');
       const data = await res.json();
+      console.log('Fetched cart:', data);
       setCart(data);
     } catch (error) {
       console.error(error);
@@ -53,41 +55,38 @@ const CartPage = () => {
   };
 
   // Place order (no payment)
-  const handleCheckout = async () => {
-    if (!cart?.items?.length) return alert('Cart is empty');
+ const handlePlaceOrder = async () => {
+  try {
+    const token = localStorage.getItem('token');
 
-    try {
-      const products = cart.items.map(item => ({
-        product: item.product._id,
-        name: item.product.name,
-        price: item.product.price,
-        quantity: item.quantity,
-        image: item.image || item.product.images?.[0],
-      }));
+    // Format products based on your cart structure
+    const orderData = {
+  products: cart.items.map(item => ({
+    product: item.product._id,  // or item._id depending on your structure
+    quantity: item.quantity,
+    price: item.product.price,
+  })),
+  totalAmount: cart.items.reduce(
+    (sum, item) => sum + item.product.price * item.quantity,
+    0
+  ),
+  shippingAddress: "Ranchi, Jharkhand, India",
+};
 
-      await fetch('http://localhost:5000/api/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          products,
-          shippingAddress: {
-            name: "John Doe",
-            address: "123 Main Street",
-            city: "City",
-            state: "State",
-            zip: "123456",
-            country: "India",
-          },
-        }),
-      });
+    console.log("Posting Order Data:", orderData);
 
-      alert('Order placed successfully!');
-      window.location.href = '/orders';
-    } catch (error) {
-      console.error(error);
-      alert('Checkout failed. Try again.');
-    }
-  };
+    const res = await axios.post('http://localhost:5000/api/orders', orderData, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    console.log("Order Response:", res.data);
+    alert('Order placed successfully!');
+  } catch (error) {
+    console.error("Order posting error:", error.response?.data || error.message);
+    alert('Failed to place order');
+  }
+};
+
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -146,7 +145,7 @@ const CartPage = () => {
             <div className="flex justify-between mb-2"><span>Subtotal</span><span>₹{subtotal}</span></div>
             <div className="flex justify-between mb-2"><span>Shipping</span><span>₹{shipping}</span></div>
             <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span>₹{total}</span></div>
-            <button onClick={handleCheckout} className="w-full bg-purple-600 text-white py-3 rounded-lg mt-4 hover:bg-purple-700">Place Order</button>
+            <button onClick={handlePlaceOrder} className="w-full bg-purple-600 text-white py-3 rounded-lg mt-4 hover:bg-purple-700">Place Order</button>
           </div>
         </div>
       </div>

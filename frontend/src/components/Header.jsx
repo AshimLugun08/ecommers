@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, User, ShoppingBag, Menu, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,6 +8,7 @@ const Header = ({ cartCount = 0 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const navItems = [
     { name: 'HOME', href: '/' },
@@ -17,11 +18,19 @@ const Header = ({ cartCount = 0 }) => {
     { name: 'CONTACT US', href: '/contact' },
   ];
 
+  // ✅ Handle user button click
   const handleAuthClick = () => {
-    setIsAuthModalOpen(true);
-    setIsMobileMenuOpen(false);
+    const token = localStorage.getItem('token');
+    console.log('Auth click, token:', token);
+    if (token) {
+      navigate('/profile');
+    } else {
+      setIsAuthModalOpen(true);
+      setIsMobileMenuOpen(false);
+    }
   };
 
+  // ✅ Auth Modal Component
   const AuthModal = () => (
     <div
       className="fixed inset-0 z-[100] bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-300"
@@ -44,7 +53,7 @@ const Header = ({ cartCount = 0 }) => {
 
         <Button
           onClick={() => {
-            window.location.href = 'http://localhost:5000/api/auth/google/callback';
+            window.location.href = 'http://localhost:5000/api/auth/google';
             setIsAuthModalOpen(false);
           }}
           className="w-full py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 flex items-center justify-center space-x-3 transition-colors shadow-sm"
@@ -56,8 +65,8 @@ const Header = ({ cartCount = 0 }) => {
   );
 
   return (
-    <header className="bg-white sticky top-0 z-50 shadow-sm">
-      {/* Promotional Banner */}
+    <header className="bg-white sticky top-0 z-[100] shadow-sm">
+      {/* Promo Banner */}
       <div className="bg-gradient-to-r from-purple-400 to-pink-400 text-white py-2 overflow-hidden">
         <div className="animate-scroll whitespace-nowrap flex">
           <span className="mx-8 text-sm font-medium">📦 Free shipping on all orders</span>
@@ -106,9 +115,12 @@ const Header = ({ cartCount = 0 }) => {
             <button className="p-2 hover:text-purple-600 transition-colors" onClick={() => setIsSearchOpen(true)}>
               <Search size={20} />
             </button>
+
+            {/* ✅ User Button (with login/profile functionality) */}
             <button className="p-2 hover:text-purple-600 transition-colors" onClick={handleAuthClick}>
               <User size={20} />
             </button>
+
             <Link to="/cart" className="p-2 hover:text-purple-600 transition-colors relative">
               <ShoppingBag size={20} />
               {cartCount > 0 && (
@@ -120,7 +132,7 @@ const Header = ({ cartCount = 0 }) => {
           </div>
         </div>
 
-        {/* Mobile Search Bar */}
+        {/* Mobile Search */}
         {isSearchOpen && (
           <div className="md:hidden pb-4">
             <Input type="text" placeholder="Search for products..." className="w-full" />
