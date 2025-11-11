@@ -1,49 +1,59 @@
-// C:\Users\asus\Downloads\ifm\project\backend\config\passport.js (Your existing code)
+// C:\Users\asus\Downloads\ifm\project\backend\config\passport.js
 
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/User'); // Ensure this path correctly points to your Mongoose User model
 
 passport.use(
     new GoogleStrategy(
         {
             clientID: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-            callbackURL: 'http://localhost:5000/api/auth/google/callback',
+            // 🛑 IMPORTANT: This URL must match the exact callback URL 
+            // set in your Google Cloud Console for OAuth credentials.
+            callbackURL: 'http://localhost:5000/api/auth/google/callback', 
             scope: ['profile', 'email'],
         },
         async (accessToken, refreshToken, profile, done) => {
             try {
-                // Check if user exists by email
-                let user = await User.findOne({ email: profile.emails[0].value });
+                const userEmail = profile.emails[0].value;
+                
+                // 1. Check if user exists by email
+                // When we find an existing user, the 'user' object will have the updated role (e.g., 'admin') 
+                // IF it was successfully saved to the database.
+                let user = await User.findOne({ email: userEmail });
 
-                // If not, create a new user
+                // 2. If user does not exist, create a new one
                 if (!user) {
                     user = await User.create({
                         name: profile.displayName,
-                        email: profile.emails[0].value,
-                        password: 'google-auth', // Dummy password (not used)
+                        email: userEmail,
+                        password: 'google-auth', // Placeholder password for OAuth users
+                        role: 'user', // ✅ FIX: Default role for all new sign-ups
                     });
                 }
+                
+                // 🔑 CRITICAL LOG: This helps debug the role issue. 
+                // It must log 'admin' for your test user if the database update worked.
+                console.log(`Passport Success: User ${user.email} Role: ${user.role}`);
 
-                // Note: The token created here is not used for the final redirect,
-                // but we call done(null, user) or done(null, {user, token}) 
-                // to populate req.user in the callback. Using 'user' is safer.
+                // 3. Return the user object. This object populates req.user in routes/auth.js
                 return done(null, user); 
+
             } catch (err) {
-                console.error('Google Strategy Error:', err);
+                console.error('🔥 Google Strategy Error:', err);
                 return done(err, null);
             }
         }
     )
 );
 
-// Note: If session is false (as in auth.js), serialize/deserialize aren't strictly needed 
-// but are good to keep for consistency.
+// Passport serialization/deserialization for session management (standard practice)
 passport.serializeUser((user, done) => done(null, user.id)); 
+
 passport.deserializeUser((id, done) => {
-    User.findById(id).then(user => done(null, user));
+    // Select('-password') is used to prevent sending the password hash to the frontend
+    User.findById(id).select('-password').then(user => done(null, user));
 });
 
 module.exports = passport;

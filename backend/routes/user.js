@@ -9,14 +9,16 @@ const { protect } = require('../middleware/auth');
 // NOTE: We do not need to define verifyToken here, we use 'protect'
 
 // ✅ GET all users (admin only)
-router.get('/', protect, async (req, res) => {
-    try {
-        const users = await User.find().select('-password');
-        res.json(users);
-    } catch (error) {
-        res.status(500).json({ error: 'Server error' });
-    }
+router.get('/', async (req, res) => {
+  try {
+    const users = await User.find().select('-password');
+    res.status(200).json(users); // ✅ Always return an array
+  } catch (err) {
+    console.error('❌ Error fetching users:', err);
+    res.status(500).json({ error: 'Failed to fetch users' });
+  }
 });
+
 
 // ✅ GET current logged-in user
 router.get('/me', protect, async (req, res) => {

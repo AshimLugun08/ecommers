@@ -84,9 +84,9 @@ const Header = ({ cartCount = 0 }) => {
             <button className="p-2" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
-            <button className="p-2" onClick={() => setIsSearchOpen(!isSearchOpen)}>
+            {/* <button className="p-2" onClick={() => setIsSearchOpen(!isSearchOpen)}>
               <Search size={20} />
-            </button>
+            </button> */}
           </div>
 
           {/* Logo */}
@@ -112,9 +112,9 @@ const Header = ({ cartCount = 0 }) => {
 
           {/* Desktop Icons */}
           <div className="hidden md:flex items-center space-x-4">
-            <button className="p-2 hover:text-purple-600 transition-colors" onClick={() => setIsSearchOpen(true)}>
+            {/* <button className="p-2 hover:text-purple-600 transition-colors" onClick={() => setIsSearchOpen(true)}>
               <Search size={20} />
-            </button>
+            </button> */}
 
             {/* ✅ User Button (with login/profile functionality) */}
             <button className="p-2 hover:text-purple-600 transition-colors" onClick={handleAuthClick}>
