@@ -11,7 +11,7 @@ passport.use(
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             // 🛑 IMPORTANT: This URL must match the exact callback URL 
             // set in your Google Cloud Console for OAuth credentials.
-            callbackURL: 'http://localhost:5000/api/auth/google/callback', 
+            callbackURL: `${process.env.BASE_URL}/auth/google/callback`, 
             scope: ['profile', 'email'],
         },
         async (accessToken, refreshToken, profile, done) => {
