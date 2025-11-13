@@ -16,7 +16,8 @@ const PORT = process.env.PORT || 5000;
 // Define allowed origins for the frontend application
 const allowedOrigins = [
     'http://localhost:3000',
-    'http://localhost:5173', // Your Vite dev server
+    'http://localhost:5173',
+    'https://admindashbord.vercel.app' // Your Vite dev server
 ];
 
 // Use the CORS middleware configured for dynamic origin allowance
